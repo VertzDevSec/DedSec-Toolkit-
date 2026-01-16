@@ -3,18 +3,22 @@ import threading
 import subprocess
 import platform
 import os
-from scapy.all import sniff
-from colorama import Fore, Style, init
+import re
+import sys
+from scapy.all import sniff, IP, TCP, UDP, ICMP
+from colorama import Fore, init
+from tabulate import tabulate
 
-# Inicializa o Colorama
 init(autoreset=True)
 
-# Variáveis globais para sincronização entre threads
+# --- VARIÁVEIS DE ESTATÍSTICA ---
 pacotes_contados = 0
+total_bytes = 0
 latencia_atual = "Iniciando..."
+resumo_trafego = {"TCP": 0, "UDP": 0, "ICMP": 0, "Outros": 0}
+ips_origem = {}
 
 def show_monitor_banner():
-    """Banner personalizado VertzDevSec para o Monitor."""
     os.system('cls' if os.name == 'nt' else 'clear')
     print(f"""
 {Fore.GREEN}    ██████╗ ███████╗██████╗ ███████╗███████╗ ██████╗
@@ -26,76 +30,70 @@ def show_monitor_banner():
 {Fore.WHITE}             NETWORK TELEMETRY - SENSOR ATIVO
     
 {Fore.CYAN}    [+] Create by: VertzDevSec (DedSec Security)
-{Fore.GREEN}    [+] Operation: Traffic Analysis
+{Fore.GREEN}    [+] Operation: Traffic Analysis & Forensics
 {Fore.GREEN}    [+] Mode: Real-time Packet Capture
 {Fore.YELLOW}    ----------------------------------------------------------------------
     """)
 
 def contar_pacotes(pkt):
-    global pacotes_contados
+    global pacotes_contados, resumo_trafego, ips_origem, total_bytes
     pacotes_contados += 1
+    total_bytes += len(pkt)
+    if pkt.haslayer(IP):
+        src_ip = pkt[IP].src
+        ips_origem[src_ip] = ips_origem.get(src_ip, 0) + 1
+        if pkt.haslayer(TCP): resumo_trafego["TCP"] += 1
+        elif pkt.haslayer(UDP): resumo_trafego["UDP"] += 1
+        elif pkt.haslayer(ICMP): resumo_trafego["ICMP"] += 1
+        else: resumo_trafego["Outros"] += 1
+
+def imprimir_relatorio_final():
+    os.system('cls' if os.name == 'nt' else 'clear')
+    print(f"\n{Fore.YELLOW}="*65)
+    print(f"{Fore.WHITE}             RELATÓRIO DE TELEMETRIA FINAL - DEDSEC")
+    print(f"{Fore.YELLOW}="*65)
+    total_mb = total_bytes / (1024 * 1024)
+    metricas = [["Total de Pacotes", sum(resumo_trafego.values())], 
+                ["Volume de Dados", f"{total_mb:.2f} MB"], 
+                ["Estado Final do Alvo", latencia_atual]]
+    print(f"\n{Fore.CYAN}RESUMO DA SESSÃO:")
+    print(tabulate(metricas, tablefmt="fancy_grid"))
+    print(f"\n{Fore.CYAN}DISTRIBUIÇÃO POR PROTOCOLO:")
+    print(tabulate([[k, v] for k, v in resumo_trafego.items()], headers=["Protocolo", "Qtd"], tablefmt="grid"))
+    print(f"\n{Fore.CYAN}TOP 5 ORIGENS DETECTADAS:")
+    top_ips = sorted(ips_origem.items(), key=lambda x: x[1], reverse=True)[:5]
+    print(tabulate(top_ips, headers=["Endereço IP", "Pacotes"], tablefmt="psql"))
+    print(f"\n{Fore.GREEN}[+] Relatório gerado com sucesso.\n")
 
 def obter_latencia(alvo):
-    """Thread dedicada para medir o ping sem travar o contador principal."""
     global latencia_atual
-    param = '-n' if platform.system().lower() == 'windows' else '-c'
-    timeout_param = '-w' if platform.system().lower() == 'windows' else '-W'
-    
+    p = '-n' if platform.system().lower() == 'windows' else '-c'
+    w = '-w' if platform.system().lower() == 'windows' else '-W'
     while True:
         try:
-            inicio = time.time()
-            # Envia 1 pacote de ping com timeout de 2 segundos
-            processo = subprocess.run(
-                ['ping', param, '1', timeout_param, '2000', alvo],
-                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
-            )
-            fim = time.time()
-            
-            if processo.returncode == 0:
-                ms = (fim - inicio) * 1000
-                latencia_atual = f"{ms:.2f} ms"
-            else:
-                latencia_atual = "TIMEOUT / QUEDA"
-        except:
-            latencia_atual = "ERRO DE REDE"
-        
+            start = time.time()
+            proc = subprocess.run(['ping', p, '1', w, '2000', alvo], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            latencia_atual = f"{(time.time()-start)*1000:.2f} ms" if proc.returncode == 0 else "TIMEOUT / QUEDA"
+        except: latencia_atual = "ERRO"
         time.sleep(1)
 
 def monitor_display():
-    """Thread para atualizar os dados de telemetria no terminal."""
     global pacotes_contados
     while True:
         pps = pacotes_contados
-        pacotes_contados = 0 
-        
-        # Lógica de cores baseada na performance da rede
-        cor_ms = Fore.GREEN
-        try:
-            valor_ms = float(latencia_atual.split()[0])
-            if valor_ms > 150: cor_ms = Fore.YELLOW
-            if valor_ms > 800: cor_ms = Fore.RED
-        except:
-            if "TIMEOUT" in latencia_atual: cor_ms = Fore.RED
-
-        # Exibe os dados formatados
-        info = f"{Fore.WHITE}[TELEMETRIA] {Fore.CYAN}PPS: {Fore.YELLOW}{pps:5} {Fore.WHITE}| {Fore.CYAN}LATÊNCIA: {cor_ms}{latencia_atual:15}"
-        print(f"\r{info}", end="", flush=True)
+        pacotes_contados = 0
+        cor = Fore.GREEN if "ms" in latencia_atual else Fore.RED
+        sys.stdout.write(f"\r{Fore.WHITE}[TELEMETRIA] {Fore.CYAN}PPS: {Fore.YELLOW}{pps:5} {Fore.WHITE}| {Fore.CYAN}LATÊNCIA: {cor}{latencia_atual:15}")
+        sys.stdout.flush()
         time.sleep(1)
 
-# --- INÍCIO DO PROGRAMA ---
-show_monitor_banner()
+if __name__ == "__main__":
+    show_monitor_banner()
+    alvo = input(f"{Fore.CYAN}[?] Digite o IP do Alvo para monitorar: ").strip()
+    threading.Thread(target=obter_latencia, args=(alvo,), daemon=True).start()
+    threading.Thread(target=monitor_display, daemon=True).start()
+    try:
+        sniff(prn=contar_pacotes, store=0)
+    except KeyboardInterrupt:
+        print(f"\n\n{Fore.RED}[!] Gerando Relatório..."); time.sleep(1); imprimir_relatorio_final()
 
-# Solicita o alvo para monitorar (Ex: o gateway do roteador antigo)
-alvo_ping = input(f"{Fore.CYAN}[?] Digite o IP do Alvo para monitorar Latência: ").strip()
-
-# Inicializa as threads de monitoramento
-threading.Thread(target=obter_latencia, args=(alvo_ping,), daemon=True).start()
-threading.Thread(target=monitor_display, daemon=True).start()
-
-print(f"\n{Fore.GREEN}[*] Sniffer Ativo. Analisando pacotes via Scapy...\n")
-
-try:
-    # O store=0 é fundamental para não travar a memória RAM da sua máquina durante o teste
-    sniff(prn=contar_pacotes, store=0)
-except KeyboardInterrupt:
-    print(f"\n\n{Fore.RED}[!] Telemetria encerrada.")
