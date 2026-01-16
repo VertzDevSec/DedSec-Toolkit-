@@ -1,4 +1,72 @@
-🛡️ DedSec Network Toolkit - Telemetry & Stress Test (v3.0)Este toolkit foi desenvolvido para fins acadêmicos e laboratoriais em cibersegurança. A versão 3.0 foca na visualização forense de dados e na resiliência de ataques de Camada 7, permitindo uma análise profunda do impacto de tráfego em infraestruturas de rede.🚀 Novas Funcionalidades e Melhorias📊 Gráfico de Impacto Protocolar (ASCII): O relatório final agora inclui um gráfico de barras dinâmico que mostra visualmente qual protocolo dominou a rede durante a análise.🌐 Auditoria de Origem Ampliada (Top 10): A tabela de origem foi expandida para os 10 IPs mais ativos, facilitando a identificação de tráfego forjado (Spoofing) e Bot-Referers.💾 Cálculo de Throughput Real: Monitoramento do volume de dados em Megabytes (MB) para provar a eficiência do ataque por PPS (Pacotes por Segundo) em vez de apenas largura de banda.🤖 Bot-Referer Camouflage: Integração de uma lista de bots (Google, Facebook, Bing) para simular tráfego orgânico no campo Referer do cabeçalho HTTP.⚡ Randomização de Portas de Origem: No script de ataque, cada conexão agora utiliza uma porta de origem aleatória, dificultando o bloqueio por Firewalls/IPS de filtragem simples.📦 Bibliotecas e FinalidadesPara garantir o funcionamento, instale as dependências abaixo dentro do seu ambiente virtual (.venv):Bashpip install scapy tabulate colorama
-BibliotecaFinalidade TécnicaScapyCaptura profunda de pacotes (Sniffing) e decodificação de protocolos (TCP/UDP/ICMP).TabulateFormatação dos relatórios em tabelas profissionais e geração do gráfico de barras.ColoramaInterface visual dinâmica com alertas de latência em tempo real via cores no terminal.🛠️ Como Operar (Laboratório)1. PreparaçãoCertifique-se de que os arquivos DedSec_DDoS.py, DedSec_Sniffer.py e headers.txt estão no mesmo diretório.2. Monitoramento de TelemetriaInicie o sensor antes do ataque para estabelecer a linha de base (Baseline). No Windows, use o terminal como Administrador.Bashpython DedSec_Sniffer.py
-Informe o IP do alvo.Acompanhe o PPS e a Latência.Aperte CTRL+C ao final para gerar o Relatório de Impacto Visual.3. Teste de Estresse (Ataque)Abra um segundo terminal e execute o disparador atualizado.Bashpython DedSec_DDoS.py
-Login Acadêmico: Usuário: dedsec | Senha: dedsec.O script realizará um scan de portas automático; selecione a porta desejada (Ex: 80).Defina a quantidade de threads (Sugestão: 150-300).📑 Conclusão do ExperimentoO relatório final permite documentar como um alto PPS (Pacotes por Segundo) degrada a performance do gateway, mesmo com baixo volume em MB, saturando as tabelas de estado do hardware alvo. O gráfico de barras evidencia o protocolo utilizado para a exaustão de recursos.⚠️ Aviso: Uso exclusivo para ambientes controlados e laboratórios de faculdade. O uso não autorizado é ilegal.
+# 🛡️ DedSec Network Toolkit `v3.0`
+
+> **Status da Missão:** Operacional (Laboratório de Redes)  
+> **Desenvolvedor:** VertzDevSec  
+> **Plataforma:** Python 3.x (Ambiente Windows/Linux)
+
+Este toolkit foi projetado para demonstrar o impacto de ataques de **Exaustão de Recursos (Camada 7)** e fornecer auditoria forense detalhada através de telemetria em tempo real.
+
+---
+
+## 🚀 Funcionalidades de Elite
+
+- [x] **📊 Gráfico de Impacto:** Visualização em barras ASCII da dominância de protocolos.
+- [x] **🌐 Auditoria Ampliada:** Rastreamento das 10 maiores origens de tráfego.
+- [x] **💾 Volumetria Real:** Cálculo de tráfego capturado em Megabytes (MB).
+- [x] **🤖 Camuflagem Bot-Referer:** Simulação de requisições via Google, Facebook e Bing.
+- [x] **⚡ Port Randomization:** Alternância dinâmica de portas de origem para bypass de filtros.
+
+---
+
+## 📦 Bibliotecas Necessárias
+
+Biblioteca,Finalidade
+Scapy: Captura e decodificação de pacotes brutos (Sniffing).
+Tabulate: Geração de tabelas profissionais e gráficos de barras no terminal.
+Colorama: Interface visual colorida para alertas de latência.
+
+Para manter o visual organizado e o funcionamento correto, instale as dependências oficiais:
+
+```bash
+pip install scapy tabulate colorama
+
+🛠️ Guia de Operação
+1. Preparação do Ambiente
+Certifique-se de que os arquivos abaixo estão na mesma pasta:
+
+DedSec_DDoS.py (Motor de Estresse)
+
+DedSec_Sniffer.py (Sensor de Telemetria)
+
+headers.txt (Lista de Agentes de Navegação)
+
+2. Monitoramento (Telemetry)
+Sempre inicie o monitor primeiro. No Windows, utilize o terminal como Administrador.
+
+PowerShell
+
+python DedSec_Sniffer.py
+Informe o IP do alvo e aguarde o início da captura.
+
+3. Operação de Estresse (DDoS)
+Em uma janela separada, dispare o ataque:
+
+PowerShell
+
+python DedSec_DDoS.py
+Credenciais: Usuário: dedsec | Senha: dedsec.
+
+📑 Modelo de Relatório Final
+Ao encerrar o monitoramento com Ctrl+C, o sistema gera automaticamente uma auditoria formatada:
+
+Plaintext
+
+╔══════════════╦═══════════════╦════════════╦════════════╗
+║ Protocolo    ║ Qtd Pacotes   ║ Percentual ║ Gráfico    ║
+╠══════════════╬═══════════════╬════════════╬════════════╣
+║ TCP (HTTP)   ║ 25.420        ║ 92.5%      ║ █████████  ║
+╚══════════════╩═══════════════╩════════════╩════════════╝
+⚠️ Aviso Legal
+Este software foi desenvolvido exclusivamente para fins de estudo acadêmico em ambientes controlados. O desenvolvedor não se responsabiliza pelo uso indevido da ferramenta.
+
+Join us. Join DedSec.
