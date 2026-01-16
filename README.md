@@ -1,24 +1,4 @@
-# DedSec Toolkit - Versão de Laboratório 🛠️
-
-Este repositório contém ferramentas de estudo desenvolvidas para testes de estresse e monitoramento de rede em ambientes controlados. O projeto foi criado para ajudar estudantes de cibersegurança a entenderem a resiliência de servidores e o comportamento de protocolos de rede.
-
-## 🚀 Ferramentas Incluídas
-
-1. **DedSec_DDoS.py**: Script de teste de carga (DDoS) utilizando a técnica de *HTTP Pipelining* para simular tráfego massivo.
-
-2. **DedSec_Sniffer.py**: Sniffer de rede em tempo real para análise de pacotes e medição de PPS (Pacotes por Segundo).
-
-3. **DedSec_Infiltration.py**: Automação para auditoria de redes sem fio, capaz de colocar a placa em modo monitor, realizar ataques de desautenticação (Deauth) e capturar *handshakes* para quebra de senha (WPA2/WPS).
-
-## 🛠️ Tecnologias e Dependências
-* **Linguagem:** Python 3.12+
-* **Bibliotecas:** * `scapy` (Manipulação de pacotes de rede)
-    * `colorama` (Interface visual colorida)
-* **Requisito Windows:** É necessário instalar o [Npcap](https://npcap.com/) para que o monitor de rede funcione.
-
-## 📦 Como Instalar
-
-1. Clone o repositório:
-   ```bash
-
-   git clone https://github.com/VertzDevSec/DedSec-Toolkit-.git
+🛡️ DedSec Network Toolkit - Telemetry & Stress Test (v3.0)Este toolkit foi desenvolvido para fins acadêmicos e laboratoriais em cibersegurança. A versão 3.0 foca na visualização forense de dados e na resiliência de ataques de Camada 7, permitindo uma análise profunda do impacto de tráfego em infraestruturas de rede.🚀 Novas Funcionalidades e Melhorias📊 Gráfico de Impacto Protocolar (ASCII): O relatório final agora inclui um gráfico de barras dinâmico que mostra visualmente qual protocolo dominou a rede durante a análise.🌐 Auditoria de Origem Ampliada (Top 10): A tabela de origem foi expandida para os 10 IPs mais ativos, facilitando a identificação de tráfego forjado (Spoofing) e Bot-Referers.💾 Cálculo de Throughput Real: Monitoramento do volume de dados em Megabytes (MB) para provar a eficiência do ataque por PPS (Pacotes por Segundo) em vez de apenas largura de banda.🤖 Bot-Referer Camouflage: Integração de uma lista de bots (Google, Facebook, Bing) para simular tráfego orgânico no campo Referer do cabeçalho HTTP.⚡ Randomização de Portas de Origem: No script de ataque, cada conexão agora utiliza uma porta de origem aleatória, dificultando o bloqueio por Firewalls/IPS de filtragem simples.📦 Bibliotecas e FinalidadesPara garantir o funcionamento, instale as dependências abaixo dentro do seu ambiente virtual (.venv):Bashpip install scapy tabulate colorama
+BibliotecaFinalidade TécnicaScapyCaptura profunda de pacotes (Sniffing) e decodificação de protocolos (TCP/UDP/ICMP).TabulateFormatação dos relatórios em tabelas profissionais e geração do gráfico de barras.ColoramaInterface visual dinâmica com alertas de latência em tempo real via cores no terminal.🛠️ Como Operar (Laboratório)1. PreparaçãoCertifique-se de que os arquivos DedSec_DDoS.py, DedSec_Sniffer.py e headers.txt estão no mesmo diretório.2. Monitoramento de TelemetriaInicie o sensor antes do ataque para estabelecer a linha de base (Baseline). No Windows, use o terminal como Administrador.Bashpython DedSec_Sniffer.py
+Informe o IP do alvo.Acompanhe o PPS e a Latência.Aperte CTRL+C ao final para gerar o Relatório de Impacto Visual.3. Teste de Estresse (Ataque)Abra um segundo terminal e execute o disparador atualizado.Bashpython DedSec_DDoS.py
+Login Acadêmico: Usuário: dedsec | Senha: dedsec.O script realizará um scan de portas automático; selecione a porta desejada (Ex: 80).Defina a quantidade de threads (Sugestão: 150-300).📑 Conclusão do ExperimentoO relatório final permite documentar como um alto PPS (Pacotes por Segundo) degrada a performance do gateway, mesmo com baixo volume em MB, saturando as tabelas de estado do hardware alvo. O gráfico de barras evidencia o protocolo utilizado para a exaustão de recursos.⚠️ Aviso: Uso exclusivo para ambientes controlados e laboratórios de faculdade. O uso não autorizado é ilegal.
