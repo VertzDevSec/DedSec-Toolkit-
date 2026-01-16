@@ -1,17 +1,20 @@
-from scapy.all import sniff
-import os
 import time
-import sys
-import signal
+import threading
+import subprocess
+import platform
+import os
+from scapy.all import sniff
 from colorama import Fore, Style, init
 
-# Inicialização visual
+# Inicializa o Colorama
 init(autoreset=True)
 
-packet_count = 0
-start_time = time.time()
+# Variáveis globais para sincronização entre threads
+pacotes_contados = 0
+latencia_atual = "Iniciando..."
 
 def show_monitor_banner():
+    """Banner personalizado VertzDevSec para o Monitor."""
     os.system('cls' if os.name == 'nt' else 'clear')
     print(f"""
 {Fore.GREEN}    ██████╗ ███████╗██████╗ ███████╗███████╗ ██████╗
@@ -27,53 +30,72 @@ def show_monitor_banner():
 {Fore.GREEN}    [+] Mode: Real-time Packet Capture
 {Fore.YELLOW}    ----------------------------------------------------------------------
     """)
-def monitor_callback(pkt):
-    global packet_count
-    packet_count += 1
+
+def contar_pacotes(pkt):
+    global pacotes_contados
+    pacotes_contados += 1
+
+def obter_latencia(alvo):
+    """Thread dedicada para medir o ping sem travar o contador principal."""
+    global latencia_atual
+    param = '-n' if platform.system().lower() == 'windows' else '-c'
+    timeout_param = '-w' if platform.system().lower() == 'windows' else '-W'
     
-    elapsed = time.time() - start_time
-    if elapsed > 1:
-        pps = packet_count / elapsed
-        bars = "█" * min(int(pps / 50), 20)
+    while True:
+        try:
+            inicio = time.time()
+            # Envia 1 pacote de ping com timeout de 2 segundos
+            processo = subprocess.run(
+                ['ping', param, '1', timeout_param, '2000', alvo],
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+            )
+            fim = time.time()
+            
+            if processo.returncode == 0:
+                ms = (fim - inicio) * 1000
+                latencia_atual = f"{ms:.2f} ms"
+            else:
+                latencia_atual = "TIMEOUT / QUEDA"
+        except:
+            latencia_atual = "ERRO DE REDE"
         
-        sys.stdout.write(
-            f"\r{Fore.WHITE}[{Fore.CYAN}AO VIVO{Fore.WHITE}] "
-            f"{Fore.GREEN}PPS: {pps:.2f} {Fore.WHITE}| "
-            f"{Fore.YELLOW}Total de Pacotes: {packet_count} {Fore.WHITE}| "
-            f"{Fore.CYAN}Carga: {bars:<20}"
-        )
-        sys.stdout.flush()
+        time.sleep(1)
+
+def monitor_display():
+    """Thread para atualizar os dados de telemetria no terminal."""
+    global pacotes_contados
+    while True:
+        pps = pacotes_contados
+        pacotes_contados = 0 
         
-def panic_button(sig, frame):
-    os.system('cls' if os.name == 'nt' else 'clear')
-    print(f"\n{Fore.RED}[!] BOTÃO DE PÂNICO ATIVADO - Sessão Encerrada.")
-    print(f"{Fore.WHITE}Relatório Final: {packet_count} pacotes interceptados.")
-    print(f"\n{Fore.GREEN}A DedSec lhe deu a verdade. Faça o que desejar.")
-    print(f"{Fore.WHITE}Junte-se a nós. Somos DedSec. {Fore.RED}Não perdoamos. Não esquecemos.")
-    sys.exit(0)
+        # Lógica de cores baseada na performance da rede
+        cor_ms = Fore.GREEN
+        try:
+            valor_ms = float(latencia_atual.split()[0])
+            if valor_ms > 150: cor_ms = Fore.YELLOW
+            if valor_ms > 800: cor_ms = Fore.RED
+        except:
+            if "TIMEOUT" in latencia_atual: cor_ms = Fore.RED
 
-# Configura o sinal de interrupção (Ctrl+C)
-signal.signal(signal.SIGINT, panic_button)
+        # Exibe os dados formatados
+        info = f"{Fore.WHITE}[TELEMETRIA] {Fore.CYAN}PPS: {Fore.YELLOW}{pps:5} {Fore.WHITE}| {Fore.CYAN}LATÊNCIA: {cor_ms}{latencia_atual:15}"
+        print(f"\r{info}", end="", flush=True)
+        time.sleep(1)
 
-def start_monitor():
-    show_monitor_banner()
-    print(f"{Fore.YELLOW}[*] Escaneando tráfego na interface principal...")
-    print(f"{Fore.RED}[!] Certifique-se de que o VS Code está como ADMINISTRADOR.\n")
-    
-    try:
-        sniff(prn=monitor_callback, store=0)
-    except Exception as e:
-        print(f"\n{Fore.RED}[X] ERRO CRÍTICO: Falha ao acessar drivers de rede.")
-        print(f"{Fore.WHITE}Verifique se o Npcap está instalado no seu Windows.")
+# --- INÍCIO DO PROGRAMA ---
+show_monitor_banner()
 
-if __name__ == "__main__":
-    try:
-        start_monitor()
-    except KeyboardInterrupt:
-        print(f"\n\n{Fore.YELLOW} ----------------------------------------------------------------------")
-        print(f"{Fore.CYAN}  [!] Sessão encerrada.")
-        print(f"{Fore.WHITE}  Relatório: {packet_count} pacotes interceptados.")
-        print(f"\n{Fore.GREEN}  A DedSec lhe deu a verdade. Faça o que desejar.")
-        print(f"{Fore.WHITE}  Junte-se a nós. Somos DedSec. {Fore.RED}Não perdoamos. Não esquecemos.")
-        print(f"{Fore.YELLOW} ----------------------------------------------------------------------\n")
-        sys.exit()
+# Solicita o alvo para monitorar (Ex: o gateway do roteador antigo)
+alvo_ping = input(f"{Fore.CYAN}[?] Digite o IP do Alvo para monitorar Latência: ").strip()
+
+# Inicializa as threads de monitoramento
+threading.Thread(target=obter_latencia, args=(alvo_ping,), daemon=True).start()
+threading.Thread(target=monitor_display, daemon=True).start()
+
+print(f"\n{Fore.GREEN}[*] Sniffer Ativo. Analisando pacotes via Scapy...\n")
+
+try:
+    # O store=0 é fundamental para não travar a memória RAM da sua máquina durante o teste
+    sniff(prn=contar_pacotes, store=0)
+except KeyboardInterrupt:
+    print(f"\n\n{Fore.RED}[!] Telemetria encerrada.")
